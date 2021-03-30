@@ -234,3 +234,83 @@ export const formatTime = (time = new Date(), flag = true, pattern = '-') => {
   }
   return result
 }
+
+/**
+ * @FileDescription: 树型结构扁平化
+ * @param tree Array<Object>
+ * @param comparator Fun 比较器
+ */
+ export const flatTree = (tree, comparator = null) => {
+  let result = []
+  for(const item of tree) {
+      // 将自身追加到数组中
+      const cpItem = JSON.parse(JSON.stringify(item))
+      if(cpItem.children) {
+          delete cpItem.children
+          result.push(cpItem)
+      }
+      Array.isArray(item.children) ? result = result.concat(flatTree(item.children)) : result.push(item)
+  }
+
+  if(comparator) {
+     return result.sort(comparator)
+  }
+
+  return result
+}
+
+/**
+ * @FileDescription: 树型结构转换
+ * @Author: chc
+ * @Date: 2020/12/23
+ * @LastEditors: chc
+ * @LastEditTime: 2020/12/23
+ * 扁平数组通过父子id组成树状结构
+ **/
+ export const convertToTreeData = (list) => {
+  //筛选出 包含parentId的数组；
+
+  let parents = list.filter(value => value.parentId == 0);
+
+  //筛选出 包含不parentId的数组；
+  let childrens = list.filter(value => value.parentId !== 0);
+  //运用递归方法将子数组插入到父数组
+  let translator = (parents, childrens) => {
+      //遍历每一个父数组
+      parents.forEach((parent) => {
+          //遍历子数组 判断子节点的parentId等于父数组的id，
+          childrens.forEach((child, index) => {
+              if (child.parentId === parent.id) {
+                  //对子节点数据进行深复制
+                  let temp = JSON.parse(JSON.stringify(childrens));
+                  //让当前子节点从temp中移除，temp作为新的子节点数据，这里是为了让递归时，子节点的遍历次数更少，如果父子关系的层级越多，越有利
+                  temp.splice(index, 1);
+                  //让当前子节点作为唯一的父节点，去递归查找其对应的子节点
+                  translator([child], temp);
+                  //把找到子节点放入父节点的ChildNodes属性中
+                  typeof parent.children !== 'undefined' ? parent.children.push(child) : parent.children = [child];
+              }
+          })
+
+      })
+  };
+  translator(parents, childrens)
+  //返回最终的结果
+  return parents
+}
+
+
+/**
+ * 深拷贝
+ * 2021.03.30
+ */
+ function deepClone(obj) {
+  if(typeof obj !== 'object' || obj === null || obj === undefined) {
+    return obj
+  }
+  let result = obj instanceof Array ? [] : {}
+  for(let i in obj) {
+    result[i] = deepClone(obj[i])
+  }
+  return result
+}
