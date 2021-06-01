@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="container">
+        <input id="input-test" name="file" type="file">
+    </div>
+<script>
+  const fileInput = document.getElementById('input-test')
+  fileInput.onchange = function (e) {
+    const file = e.target.files[0]
+
+    console.log(file instanceof File) // true
+
+    const reader = new FileReader()
+
+    reader.readAsArrayBuffer(file)
+
+    reader.onload = (e) => {
+
+      // 读取的ArrayBuffer二进制数组
+      const buffer = e.target.result
+
+      let blob = new Blob([buffer]); // 传入一个合适的 MIME 类型
+      let url = URL.createObjectURL(blob);
+
+      let image = new Image()
+      image.src = url
+
+      document.getElementById('container').appendChild(image)
+    }
+
+  }
+
+</script>
+</body>
+</html>
