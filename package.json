@@ -1,0 +1,23 @@
+{
+  "name": "accumulate",
+  "version": "1.0.0",
+  "description": "#### 项目介绍 此项目用来保存日常的一些学习心得以及常用代码段",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiaoruogu/accumulate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jiaoruogu/accumulate/issues"
+  },
+  "homepage": "https://github.com/jiaoruogu/accumulate#readme",
+  "dependencies": {
+    "axios": "^0.21.1"
+  }
+}
