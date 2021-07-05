@@ -19,5 +19,8 @@
   "homepage": "https://github.com/jiaoruogu/accumulate#readme",
   "dependencies": {
     "axios": "^0.21.1"
+  },
+  "devDependencies": {
+    "jquery": "^3.6.0"
   }
 }

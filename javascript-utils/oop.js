@@ -194,3 +194,15 @@ class Person {
 let person1 = new Person()
 person1.name = 'fuck'
 console.log(person1.name)
+
+
+let a =
+  {
+    code:200,
+    count: 0,
+    data: {
+      'A2160000': [{},{}],
+      'A2160001': [{},{}]
+    },
+    message: '',
+  }
