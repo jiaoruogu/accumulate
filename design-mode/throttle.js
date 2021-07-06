@@ -1,7 +1,7 @@
+// 函数自执行可以去掉，损耗性能。可以引入页面后在调用
 
-
-let debounce = (function () {
-  let timer = null
+let debounce = function () {
+  let timer = null,direct = true
 
   return function (fn, interval) {
 
@@ -14,33 +14,37 @@ let debounce = (function () {
     }, interval)
     
   }
-})()
+}
 
 
 
-let debounceDirect = (function () {
 
-  let timer = null
+// 此处可以作为一个节流的，有一个问题。异步代码是需要同步代码执行完才会执行，时间上有可能会不准确
+let debounceDirect = function () {
+
+  let timer = null, flag = true
 
   return function (fn, interval) {
 
-    if(!timer) {
+    if(!timer && flag) {
       fn()
+      flag = false
       timer = setTimeout(() => {
         console.log('hhahahah')
         timer = null
+        flag = true
       }, interval)
     }
    
   }
-})()
+}
 
 
 
-let throttle = (function(){
+// 节流函数
+let throttle = function(){
 
   let prev = Date.now()
-
   return function(fn, dely) {
     const now = Date.now()
     if(now - prev > dely) {
@@ -48,11 +52,4 @@ let throttle = (function(){
       prev = Date.now()
     }
   }
-})()
-
-
-for(let i=0;i<50;i++) {
-  throttle(() => {
-    console.log(123);
-  }, 1)
 }
