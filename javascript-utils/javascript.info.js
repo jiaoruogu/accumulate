@@ -10,7 +10,7 @@ console.log( b ); // 2，自增一次
 
 let a2 = 2;
 
-let x = 1 + (a2 *= 2);  
+let x = 1 + (a2 *= 2);
 
 // a2 4  x 5
 
@@ -67,11 +67,11 @@ for (let i = 0; i < 5; ++i) console.log( i );
 console.log('--------------------------------');
 
 for (let i = 0; i < 11; i++) {
-  
+
   if (i % 2 === 0) {
     console.log(i);
   }
-  
+
 }
 
 console.log('--------------------------------');
@@ -90,9 +90,10 @@ function prime(n) {
   let i = 2
   while(i <= n) {
     let flag = true
-    for(let j=2;j<i;j++){
-      if (i%j != 0) {
+    for(let j=2;j <= i / 2;j++){
+      if (i%j == 0) {
         flag = false
+        break
       }
     }
     if(flag) {
@@ -102,4 +103,4 @@ function prime(n) {
   }
 }
 
-prime(10)
+prime(20)
