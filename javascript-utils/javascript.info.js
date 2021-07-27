@@ -104,3 +104,191 @@ function prime(n) {
 }
 
 prime(20)
+
+
+console.log('--------------------------------');
+
+function isEmpty(obj) {
+  if(JSON.stringify(obj) === '{}') {
+    return true
+  }
+  return false
+
+}
+
+let schedule = {}
+
+console.log(isEmpty(schedule));
+
+console.log('--------------------------------');
+
+let salaries = {
+  John: 100,
+  Ann: 160,
+  Pete: 130
+}
+
+function sumSalary(salaries){
+  let sum = 0
+  if(isEmpty(salaries)) return sum
+
+  for (const value of Object.values(salaries)) {
+    sum += value
+  }
+  return sum
+}
+
+console.log(sumSalary(salaries));
+
+console.log('--------------------------------');
+
+// 在调用之前
+let menu = {
+  width: 200,
+  height: 300,
+  title: "My menu"
+};
+
+function multiplyNumeric(menu) {
+  for (const key in menu) {
+    if (Object.hasOwnProperty.call(menu, key)) {  
+      if(typeof menu[key] === 'number') {
+        menu[key] *= 2
+      }
+      
+    }
+  }
+}
+
+multiplyNumeric(menu);
+
+console.log(menu);
+
+
+console.log('--------------------------------');
+
+
+function makeUser() {
+  return {
+    name: "John",
+    ref: this
+  };
+}
+
+let user = makeUser()
+
+console.log(global.user);
+
+
+console.log('--------------------------------');
+
+// {
+// global.identity = 'The Global'
+
+// let object = {
+//   identity: 'The Object',
+//   gentIdentity() {
+//     return this.identity
+//   }
+// }
+
+// object.gentIdentity()  // The Object
+// (object.gentIdentity)() // The Object
+// (object.gentIdentity = object.gentIdentity)() // The Global
+
+// }
+
+// this的值是在代码运行中计算出来的，它取决于代码上下文（取决于在“点符号前”的是什么对象）
+
+
+console.log('--------------------------------');
+
+// let calculator = {
+//   read(){
+//     this.a = prompt('请输入第一个')
+//     this.b = prompt('请输入第二个')
+//   },
+//   sum() {
+//     return +this.a + +this.b
+//   },
+//   mul () {
+//     return +this.a * +this.b
+//   }
+// }
+
+// calculator.read()
+// alert( calculator.sum() );
+// alert( calculator.mul() );
+
+console.log('--------------------------------');
+
+
+let ladder = {
+  step: 0,
+  up() {
+    this.step++;
+    return this
+  },
+  down() {
+    this.step--;
+    return this
+  },
+  showStep: function() { // 显示当前的 step
+    console.log( this.step );
+    return this
+  }
+};
+
+// ladder.up();
+// ladder.up();
+// ladder.down();
+// ladder.showStep(); // 1
+
+ladder.up().up().down().showStep().down().showStep() // 1
+
+
+
+function Calculator () {
+  this.a = 0
+  this.b = 0
+  this.read = () => {
+    this.a = +prompt('第一个')
+    this.b = +prompt('第二个')
+  }
+
+  this.sum = () => {
+    return this.a + this.b
+  }
+
+  this.mul = () => {
+    return this.a * this.b
+  }
+}
+
+
+let calc = new Calculator
+
+calc.read()
+
+console.log(calc.sum());
+console.log(calc.mul());
+
+
+console.log('--------------------------------');
+
+
+function Accumulator(startingValue = 0) {
+  this.value = startingValue
+
+  this.read = () => {
+    let temp = +prompt('输入', 0)
+    this.value += temp
+  }
+}
+
+let accumulator = new Accumulator(1); // 初始值 1
+
+accumulator.read(); // 添加用户输入的 value
+accumulator.read(); // 添加用户输入的 value
+
+alert(accumulator.value); // 显示这些值的总和
