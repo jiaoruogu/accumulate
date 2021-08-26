@@ -248,47 +248,93 @@ ladder.up().up().down().showStep().down().showStep() // 1
 
 
 
-function Calculator () {
-  this.a = 0
-  this.b = 0
-  this.read = () => {
-    this.a = +prompt('第一个')
-    this.b = +prompt('第二个')
-  }
+// function Calculator () {
+//   this.a = 0
+//   this.b = 0
+//   this.read = () => {
+//     this.a = +prompt('第一个')
+//     this.b = +prompt('第二个')
+//   }
 
-  this.sum = () => {
-    return this.a + this.b
-  }
+//   this.sum = () => {
+//     return this.a + this.b
+//   }
 
-  this.mul = () => {
-    return this.a * this.b
-  }
-}
+//   this.mul = () => {
+//     return this.a * this.b
+//   }
+// }
 
 
-let calc = new Calculator
+// let calc = new Calculator
 
-calc.read()
+// calc.read()
 
-console.log(calc.sum());
-console.log(calc.mul());
+// console.log(calc.sum());
+// console.log(calc.mul());
 
 
 console.log('--------------------------------');
 
 
-function Accumulator(startingValue = 0) {
-  this.value = startingValue
+// function Accumulator(startingValue = 0) {
+//   this.value = startingValue
 
-  this.read = () => {
-    let temp = +prompt('输入', 0)
-    this.value += temp
+//   this.read = () => {
+//     let temp = +prompt('输入', 0)
+//     this.value += temp
+//   }
+// }
+
+// let accumulator = new Accumulator(1); // 初始值 1
+
+// accumulator.read(); // 添加用户输入的 value
+// accumulator.read(); // 添加用户输入的 value
+
+// alert(accumulator.value); // 显示这些值的总和
+
+
+// {
+//   let arr = ["a", "b"];
+
+// arr.push(function() {
+//   console.log( this );
+// })
+
+// let a = arr[2]
+
+// a()
+// }
+
+
+{
+  function camelize(str) {
+
+    let temp = str.split('-')
+
+    temp = temp.map((i,index) => {
+      if(index > 0) {
+        console.log('zouni');
+        i = i[0].toUpperCase() + i.slice(1)
+        console.log(i);
+      }
+      return i
+    })
+
+    console.log(temp);
+
+    return temp.join('')
+
   }
+
+  console.log(camelize("background-color"));
 }
 
-let accumulator = new Accumulator(1); // 初始值 1
 
-accumulator.read(); // 添加用户输入的 value
-accumulator.read(); // 添加用户输入的 value
+const bb = [{a: 1},{a: 2}]
 
-alert(accumulator.value); // 显示这些值的总和
+bb.map(i => {
+  i.a *= 2
+})
+
+console.log(bb);
