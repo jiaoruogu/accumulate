@@ -16,7 +16,7 @@ export function http(url, data = {}, type = 'get') {
 // 用promise封装原生ajax
 export function http2(url, data = {}, type = 'GET') {
   return new Promise((resolve, reject) => {
-    // 获取 xhr 对象 
+    // 获取 xhr 对象
     let xhr
     if (window.XMLHttpRequest) {
       xhr = new XMLHttpRequest()
@@ -86,7 +86,7 @@ export function downloadUrl(url) {
   document.body.appendChild(iframe);
 }
 
-/** 
+/**
  * 当服务端响应回来的二进制文件完成后，我们可以取得二进制内容
  * 通过blob对象进而转换成源文件
  */
@@ -165,7 +165,7 @@ export function orFullScreen() {
 
 
 
-// 下面的方式是针对dom操作的一些封装↓ 
+// 下面的方式是针对dom操作的一些封装↓
 
 /** 查看dom元素是否含有指定类名 */
 export const hasClass = (obj, cls) => {
@@ -194,7 +194,7 @@ export const toggleClass = (obj, cls) => {
   }
 }
 
-/** 
+/**
  *  @param {number} value 需要操作的数字
  *  @param {number} count 需要保留的小数位数 count > 0
  *  @return {string} 操作后的数字字符串
@@ -212,9 +212,9 @@ export const formatNum = (value, count) => {
 }
 
 /**
- * 
+ *
  * @param {Date} time default 为当前时间， 可以是时间戳，日期字符串
- * @param {boolean} flag default = true, 默认显示具体时间，设置为false只显示日期  
+ * @param {boolean} flag default = true, 默认显示具体时间，设置为false只显示日期
  * @param {string} pattern default = '-' 连接年月日的字符
  */
 export const formatTime = (time = new Date(), flag = true, pattern = '-') => {
@@ -313,4 +313,16 @@ export const formatTime = (time = new Date(), flag = true, pattern = '-') => {
     result[i] = deepClone(obj[i])
   }
   return result
+}
+
+/**
+ * 获取当前时间的时分秒
+ * @returns {string}
+ */
+function time() {
+  // "2021/10/14" ->"2021-10-14"
+  // new Date().toLocaleDateString().replace(/\//g, '-')
+
+  // "11:13:27"
+  return new Date().toTimeString().split(' ')[0];
 }
