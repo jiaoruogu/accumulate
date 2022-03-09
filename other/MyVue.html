@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MyVue</title>
+</head>
+<body>
+<div id="app">
+    <form>
+        <input type="text"  v-model="number">
+        <button type="button" v-click="increment">增加</button>
+        <button type="button" v-click="addF">addF</button>
+    </form>
+    <h3 v-bind="number"></h3>
+
+
+    <input type="text" v-model="test">
+    <h1 v-bind="test"></h1>
+</div>
+<script>
+
+    function MyVue(options) {
+        this._init(options)
+    }
+
+    MyVue.prototype._init = function (options) {
+        this.$options = options
+        this.$el = document.querySelector(options.el)
+        this.$data = options.data
+        this.$methods = options.methods
+
+        this._binding = {}
+
+        this._obverse(this.$data)
+        this._complie(this.$el)
+    };
+
+    MyVue.prototype._obverse = function (obj) {
+        for (const key of Object.keys(obj)) {
+            this._binding[key] = {
+                _directives: []
+            }
+            let value = obj[key]
+
+            if (Object.prototype.toString.call(value) === '[object Object]') {
+                this._obverse(value)
+            }
+            let binding = this._binding[key]
+            Object.defineProperty(this.$data, key, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    return value
+                },
+                set(newValue) {
+                    if (newValue !== value) {
+                        value = newValue
+                        binding._directives.forEach(i => i.update())
+                    }
+                },
+            })
+        }
+    };
+
+    MyVue.prototype._complie = function (root) {
+        let nodes = root.children, _this = this
+        for (let i = 0; i < nodes.length; i++) {
+            let node = nodes[i]
+            if (node.children.length) {
+                this._complie(node)
+            }
+
+            if (node.hasAttribute('v-click')) {
+                node.onclick = (function (){
+                    const attrVal = node.getAttribute('v-click')
+                    return _this.$methods[attrVal].bind(_this.$data)
+                }())
+            }
+
+            if (node.hasAttribute('v-model') && (node.tagName == 'INPUT' || node.tagName == 'TEXTAREA')) {
+                node.addEventListener('input', (function (key) {
+                    const attrVal = node.getAttribute('v-model')
+                    _this._binding[attrVal]._directives.push(new Watcher(
+                        'input',
+                        node,
+                        _this,
+                        attrVal,
+                        'value'
+                    ))
+
+                    return function () {
+                        _this.$data[attrVal] = nodes[key].value
+                    };
+                }(i)));
+            }
+
+            if (node.hasAttribute('v-bind')) {
+                const attrVal = node.getAttribute('v-bind');
+                _this._binding[attrVal]._directives.push(new Watcher(
+                    'text',
+                    node,
+                    _this,
+                    attrVal,
+                    'innerHTML'
+                ))
+            }
+        }
+    };
+
+    function Watcher (name, el, vm, exp, attr) {
+        this.name = name
+        this.el = el
+        this.vm = vm
+        this.exp = exp
+        this.attr = attr
+
+        this.update()
+    };
+
+    Watcher.prototype.update = function () {
+        this.el[this.attr] = this.vm.$data[this.exp]
+    }
+
+    let app = new MyVue({
+        el: '#app',
+        data: {
+            number: 1,
+            test: 'fuck',
+            h: 'hh',
+            youhou: '132'
+        },
+        methods: {
+            increment() {
+                this.number++
+            },
+            addF() {
+                this.test += 't'
+            },
+        }
+    })
+
+
+</script>
+</body>
+</html>
