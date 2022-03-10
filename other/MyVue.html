@@ -37,16 +37,18 @@
 
     MyVue.prototype._obverse = function (obj) {
         for (const key of Object.keys(obj)) {
-            this._binding[key] = {
-                _directives: []
-            }
             let value = obj[key]
 
             if (Object.prototype.toString.call(value) === '[object Object]') {
                 this._obverse(value)
             }
+
+            this._binding[key] = {
+                _directives: []
+            }
+
             let binding = this._binding[key]
-            Object.defineProperty(this.$data, key, {
+            Object.defineProperty(obj, key, {
                 configurable: true,
                 enumerable: true,
                 get() {
@@ -63,7 +65,7 @@
     };
 
     MyVue.prototype._complie = function (root) {
-        let nodes = root.children, _this = this
+        let nodes = root.children
         for (let i = 0; i < nodes.length; i++) {
             let node = nodes[i]
             if (node.children.length) {
@@ -71,35 +73,35 @@
             }
 
             if (node.hasAttribute('v-click')) {
-                node.onclick = (function (){
+                node.onclick = (() => {
                     const attrVal = node.getAttribute('v-click')
-                    return _this.$methods[attrVal].bind(_this.$data)
-                }())
+                    return this.$methods[attrVal].bind(this.$data)
+                })()
             }
 
             if (node.hasAttribute('v-model') && (node.tagName == 'INPUT' || node.tagName == 'TEXTAREA')) {
-                node.addEventListener('input', (function (key) {
+                node.addEventListener('input', ((key) => {
                     const attrVal = node.getAttribute('v-model')
-                    _this._binding[attrVal]._directives.push(new Watcher(
+                    this._binding[attrVal]._directives.push(new Watcher(
                         'input',
                         node,
-                        _this,
+                        this,
                         attrVal,
                         'value'
                     ))
 
-                    return function () {
-                        _this.$data[attrVal] = nodes[key].value
+                    return  () => {
+                        this.$data[attrVal] = node.value
                     };
-                }(i)));
+                })(i));
             }
 
             if (node.hasAttribute('v-bind')) {
                 const attrVal = node.getAttribute('v-bind');
-                _this._binding[attrVal]._directives.push(new Watcher(
+                this._binding[attrVal]._directives.push(new Watcher(
                     'text',
                     node,
-                    _this,
+                    this,
                     attrVal,
                     'innerHTML'
                 ))
