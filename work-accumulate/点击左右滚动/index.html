@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    .arrow {
+      padding: 0;
+      background: #ddd;
+      border-radius: 15px;
+      border: 1px solid gray;
+      font-size: 24px;
+      line-height: 24px;
+      color: #444;
+      display: block;
+    }
+
+    .arrow:focus {
+      outline: none;
+    }
+
+    .arrow:hover {
+      background: #ccc;
+      cursor: pointer;
+    }
+
+    ul {
+      height: 130px;
+
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0;
+      /* display: flex; */
+      width: 100%;
+      white-space: nowrap;
+      transition: margin-left 250ms;
+    }
+
+    ul img {
+      width: 130px;
+      height: 130px;
+      display: block; /* removes extra space near images */
+    }
+
+    ul li {
+      display: inline-block;
+      /* float: left; */
+    }
+
+    #carousel {
+      width: 390px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- create your markup and styles -->
+
+  <button class="arrow">⇦</button>
+  <button class="arrow">⇨</button>
+
+
+  <div id="carousel">
+    <ul id="gallery">
+      <li><img src="https://en.js.cx/carousel/1.png"></li>
+      <li><img src="https://en.js.cx/carousel/2.png"></li>
+      <li><img src="https://en.js.cx/carousel/3.png"></li>
+      <li><img src="https://en.js.cx/carousel/4.png"></li>
+      <li><img src="https://en.js.cx/carousel/5.png"></li>
+      <li><img src="https://en.js.cx/carousel/6.png"></li>
+      <li><img src="https://en.js.cx/carousel/7.png"></li>
+      <li><img src="https://en.js.cx/carousel/8.png"></li>
+      <li><img src="https://en.js.cx/carousel/9.png"></li>
+      <li><img src="https://en.js.cx/carousel/10.png"></li>
+    </ul>
+  </div>
+
+
+  <script>
+    const ul = document.querySelector('#gallery')
+    const items = Array.from(ul.children)
+    const galleryWidth = items.reduce((p,n) => p + n.offsetWidth, 0) - 390
+    // ul.style.width = `${galleryWidth}px`
+
+    const arrows = document.querySelectorAll('.arrow')
+    const leftArrow = arrows[0], rightArrow = arrows[1]
+
+    let initPos = 0
+
+    rightArrow.onclick = () => {
+      
+      if (initPos >= 0 && initPos < galleryWidth) {
+        const step = galleryWidth - initPos >= 390 ? 390 : galleryWidth - initPos
+        initPos += step
+        ul.style.marginLeft = `-${initPos}px`
+      }
+    }
+    leftArrow.onclick = () => {
+      if (initPos >= 0) {
+        const step = initPos >= 390 ? 390 : initPos
+        initPos -= step
+        ul.style.marginLeft = `-${initPos}px`
+      }
+    }
+
+  </script>
+
+</body>
+</html>
