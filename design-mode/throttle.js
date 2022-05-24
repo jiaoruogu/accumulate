@@ -1,9 +1,9 @@
 // 函数自执行可以去掉，损耗性能。可以引入页面后在调用
 
-let debounce = function () {
-  let timer = null,direct = true
+let debounce = function (fn, interval = 100) {
+  let timer = null
 
-  return function (fn, interval) {
+  return function () {
 
     if(timer) {
       clearTimeout(timer)
@@ -42,14 +42,26 @@ let debounceDirect = function () {
 
 
 // 节流函数
-let throttle = function(){
+let throttle = function(fn, dely){
 
   let prev = Date.now()
-  return function(fn, dely) {
+  return function() {
     const now = Date.now()
     if(now - prev > dely) {
       fn()
       prev = Date.now()
+    }
+  }
+}
+
+// 节流函数实现之二
+function throttle2 (fn, dely = 100) {
+  let flag = true
+  return function () {
+    if (flag) {
+      flag = false
+      fn()
+      setTimeout(() => flag = true, dely)
     }
   }
 }
