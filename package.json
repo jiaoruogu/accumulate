@@ -4,6 +4,7 @@
   "description": "#### 项目介绍 此项目用来保存日常的一些学习心得以及常用代码段",
   "main": "index.js",
   "scripts": {
+    "dev": "vite --host",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -21,6 +22,7 @@
     "axios": "^0.21.1"
   },
   "devDependencies": {
-    "jquery": "^3.6.0"
+    "jquery": "^3.6.0",
+    "vite": "^4.2.0"
   }
 }
