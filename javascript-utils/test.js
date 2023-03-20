@@ -18,4 +18,5 @@ arr.push(function() {
 
 let a = arr[2]
 
+
 a()
