@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xbox手柄按键读取器</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .status {
+        text-align: center;
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        padding: 15px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .connected {
+        background: rgba(0, 255, 0, 0.3) !important;
+      }
+
+      .disconnected {
+        background: rgba(255, 0, 0, 0.3) !important;
+      }
+
+      .gamepad-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .buttons-section,
+      .axes-section {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+      }
+
+      .section-title {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        text-align: center;
+        color: #ffd700;
+      }
+
+      .button-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .button {
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+        background: rgba(255, 255, 255, 0.2);
+        transition: all 0.1s ease;
+        font-size: 0.9em;
+      }
+
+      .button.pressed {
+        background: #00ff00 !important;
+        color: #000;
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+      }
+
+      .dpad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        max-width: 150px;
+        margin: 0 auto;
+      }
+
+      .dpad .button {
+        aspect-ratio: 1;
+        font-size: 0.8em;
+      }
+
+      .dpad .empty {
+        background: transparent;
+      }
+
+      .axes-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+
+      .stick {
+        text-align: center;
+      }
+
+      .stick-visual {
+        width: 120px;
+        height: 120px;
+        border: 3px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        margin: 10px auto;
+        position: relative;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .stick-dot {
+        width: 20px;
+        height: 20px;
+        background: #00ff00;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.1s ease;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+      }
+
+      .triggers {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .trigger {
+        text-align: center;
+      }
+
+      .trigger-bar {
+        width: 100%;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .trigger-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+        transition: width 0.1s ease;
+        width: 0%;
+      }
+
+      .log {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+      }
+
+      .log-entry {
+        margin-bottom: 5px;
+        padding: 5px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      @media (max-width: 768px) {
+        .gamepad-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .button-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎮 Xbox手柄按键读取器</h1>
+
+      <div id="status" class="status disconnected">
+        手柄未连接 - 请连接Xbox手柄并按任意键
+      </div>
+
+      <div class="gamepad-layout">
+        <div class="buttons-section">
+          <div class="section-title">🔘 按键状态</div>
+
+          <div class="button-grid">
+            <div class="button" id="button-0">A</div>
+            <div class="button" id="button-1">B</div>
+            <div class="button" id="button-2">X</div>
+            <div class="button" id="button-3">Y</div>
+            <div class="button" id="button-4">LB</div>
+            <div class="button" id="button-5">RB</div>
+            <div class="button" id="button-6">LT</div>
+            <div class="button" id="button-7">RT</div>
+            <div class="button" id="button-8">Back</div>
+            <div class="button" id="button-9">Start</div>
+            <div class="button" id="button-10">LS</div>
+            <div class="button" id="button-11">RS</div>
+          </div>
+
+          <div class="section-title">🎯 方向键</div>
+          <div class="dpad">
+            <div class="empty"></div>
+            <div class="button" id="button-12">↑</div>
+            <div class="empty"></div>
+            <div class="button" id="button-14">←</div>
+            <div class="empty"></div>
+            <div class="button" id="button-15">→</div>
+            <div class="empty"></div>
+            <div class="button" id="button-13">↓</div>
+            <div class="empty"></div>
+          </div>
+        </div>
+
+        <div class="axes-section">
+          <div class="section-title">🕹️ 摇杆状态</div>
+
+          <div class="axes-container">
+            <div class="stick">
+              <div>左摇杆</div>
+              <div class="stick-visual">
+                <div class="stick-dot" id="left-stick"></div>
+              </div>
+              <div id="left-values">X: 0.00, Y: 0.00</div>
+            </div>
+
+            <div class="stick">
+              <div>右摇杆</div>
+              <div class="stick-visual">
+                <div class="stick-dot" id="right-stick"></div>
+              </div>
+              <div id="right-values">X: 0.00, Y: 0.00</div>
+            </div>
+          </div>
+
+          <div class="triggers">
+            <div class="trigger">
+              <div>左扳机 (LT)</div>
+              <div class="trigger-bar">
+                <div class="trigger-fill" id="left-trigger"></div>
+              </div>
+              <div id="left-trigger-value">0.00</div>
+            </div>
+
+            <div class="trigger">
+              <div>右扳机 (RT)</div>
+              <div class="trigger-bar">
+                <div class="trigger-fill" id="right-trigger"></div>
+              </div>
+              <div id="right-trigger-value">0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">📝 操作日志</div>
+      <div class="log" id="log"></div>
+    </div>
+
+    <script>
+      let gamepadIndex = null;
+      let animationId = null;
+
+      // 按键名称映射
+      const buttonNames = {
+        0: "A",
+        1: "B",
+        2: "X",
+        3: "Y",
+        4: "LB",
+        5: "RB",
+        6: "LT",
+        7: "RT",
+        8: "Back",
+        9: "Start",
+        10: "LS",
+        11: "RS",
+        12: "上",
+        13: "下",
+        14: "左",
+        15: "右",
+      };
+
+      // 日志功能
+      function addLog(message) {
+        const log = document.getElementById("log");
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        log.insertBefore(entry, log.firstChild);
+
+        // 限制日志条数
+        if (log.children.length > 50) {
+          log.removeChild(log.lastChild);
+        }
+      }
+
+      // 手柄连接事件
+      window.addEventListener("gamepadconnected", (e) => {
+        gamepadIndex = e.gamepad.index;
+        document.getElementById(
+          "status"
+        ).textContent = `手柄已连接: ${e.gamepad.id}`;
+        document.getElementById("status").className = "status connected";
+        addLog(`手柄连接: ${e.gamepad.id} (索引: ${gamepadIndex})`);
+
+        if (!animationId) {
+          gameLoop();
+        }
+      });
+
+      // 手柄断开事件
+      window.addEventListener("gamepaddisconnected", (e) => {
+        if (e.gamepad.index === gamepadIndex) {
+          gamepadIndex = null;
+          document.getElementById("status").textContent =
+            "手柄已断开 - 请重新连接";
+          document.getElementById("status").className = "status disconnected";
+          addLog("手柄断开连接");
+
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+
+          // 重置所有按键状态
+          resetAllButtons();
+        }
+      });
+
+      // 重置所有按键状态
+      function resetAllButtons() {
+        for (let i = 0; i < 16; i++) {
+          const button = document.getElementById(`button-${i}`);
+          if (button) {
+            button.classList.remove("pressed");
+          }
+        }
+
+        // 重置摇杆
+        document.getElementById("left-stick").style.transform =
+          "translate(-50%, -50%)";
+        document.getElementById("right-stick").style.transform =
+          "translate(-50%, -50%)";
+        document.getElementById("left-values").textContent = "X: 0.00, Y: 0.00";
+        document.getElementById("right-values").textContent =
+          "X: 0.00, Y: 0.00";
+
+        // 重置扳机
+        document.getElementById("left-trigger").style.width = "0%";
+        document.getElementById("right-trigger").style.width = "0%";
+        document.getElementById("left-trigger-value").textContent = "0.00";
+        document.getElementById("right-trigger-value").textContent = "0.00";
+      }
+
+      // 主游戏循环
+      function gameLoop() {
+        if (gamepadIndex === null) return;
+
+        const gamepads = navigator.getGamepads();
+        const gamepad = gamepads[gamepadIndex];
+
+        if (!gamepad) {
+          gamepadIndex = null;
+          return;
+        }
+
+        // 处理按键
+        gamepad.buttons.forEach((button, index) => {
+          const buttonElement = document.getElementById(`button-${index}`);
+          if (buttonElement) {
+            const wasPressed = buttonElement.classList.contains("pressed");
+            const isPressed = button.pressed;
+
+            if (isPressed && !wasPressed) {
+              buttonElement.classList.add("pressed");
+              addLog(`按键按下: ${buttonNames[index] || `按键${index}`}`);
+            } else if (!isPressed && wasPressed) {
+              buttonElement.classList.remove("pressed");
+              addLog(`按键释放: ${buttonNames[index] || `按键${index}`}`);
+            }
+          }
+        });
+
+        // 处理摇杆
+        if (gamepad.axes.length >= 4) {
+          // 左摇杆 (axes 0, 1)
+          const leftX = gamepad.axes[0];
+          const leftY = gamepad.axes[1];
+          const leftStick = document.getElementById("left-stick");
+          const leftValues = document.getElementById("left-values");
+
+          const leftPixelX = leftX * 45 + 50; // 转换为百分比位置
+          const leftPixelY = leftY * 45 + 50;
+
+          leftStick.style.left = `${leftPixelX}%`;
+          leftStick.style.top = `${leftPixelY}%`;
+          leftValues.textContent = `X: ${leftX.toFixed(2)}, Y: ${leftY.toFixed(
+            2
+          )}`;
+
+          // 右摇杆 (axes 2, 3)
+          const rightX = gamepad.axes[2];
+          const rightY = gamepad.axes[3];
+          const rightStick = document.getElementById("right-stick");
+          const rightValues = document.getElementById("right-values");
+
+          const rightPixelX = rightX * 45 + 50;
+          const rightPixelY = rightY * 45 + 50;
+
+          rightStick.style.left = `${rightPixelX}%`;
+          rightStick.style.top = `${rightPixelY}%`;
+          rightValues.textContent = `X: ${rightX.toFixed(
+            2
+          )}, Y: ${rightY.toFixed(2)}`;
+        }
+
+        // 处理扳机 (通常是按键6和7的value值，或者axes)
+        if (gamepad.buttons.length > 6) {
+          const leftTrigger = gamepad.buttons[6].value;
+          const rightTrigger = gamepad.buttons[7].value;
+
+          document.getElementById("left-trigger").style.width = `${
+            leftTrigger * 100
+          }%`;
+          document.getElementById("right-trigger").style.width = `${
+            rightTrigger * 100
+          }%`;
+          document.getElementById("left-trigger-value").textContent =
+            leftTrigger.toFixed(2);
+          document.getElementById("right-trigger-value").textContent =
+            rightTrigger.toFixed(2);
+        }
+
+        animationId = requestAnimationFrame(gameLoop);
+      }
+
+      // 页面加载时检查是否已有手柄连接
+      window.addEventListener("load", () => {
+        const gamepads = navigator.getGamepads();
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            gamepadIndex = i;
+            document.getElementById(
+              "status"
+            ).textContent = `手柄已连接: ${gamepads[i].id}`;
+            document.getElementById("status").className = "status connected";
+            addLog(`检测到已连接的手柄: ${gamepads[i].id} (索引: ${i})`);
+            gameLoop();
+            break;
+          }
+        }
+
+        addLog("页面加载完成，等待手柄连接...");
+      });
+
+      // 添加键盘快捷键用于测试
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "F12") {
+          console.log("当前连接的手柄:", navigator.getGamepads());
+        }
+      });
+    </script>
+  </body>
+</html>
