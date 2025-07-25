@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统一游戏循环 - 性能优化示例</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: white;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .performance-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .gamepad-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 12px;
+            line-height: 1.4;
+            min-width: 200px;
+        }
+        
+        .status-good { color: #00ff00; }
+        .status-warning { color: #ffff00; }
+        .status-bad { color: #ff0000; }
+        
+        .button-row {
+            display: flex;
+            gap: 5px;
+            margin: 5px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.1s ease;
+        }
+        
+        .btn.pressed {
+            background: #00ff00;
+            color: #000;
+            transform: scale(1.1);
+        }
+        
+        .controls-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 11px;
+        }
+        
+        .optimization-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 11px;
+            max-width: 250px;
+        }
+        
+        .toggle-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+            pointer-events: all;
+        }
+        
+        .toggle-btn.active {
+            background: #00ff00;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="ui-overlay">
+        <div class="performance-panel">
+            <div><strong>🎯 性能监控</strong></div>
+            <div>FPS: <span id="fps" class="status-good">60</span></div>
+            <div>帧时间: <span id="frametime">16.67ms</span></div>
+            <div>渲染时间: <span id="rendertime">0ms</span></div>
+            <div>输入时间: <span id="inputtime">0ms</span></div>
+            <div>更新时间: <span id="updatetime">0ms</span></div>
+            <div>总循环数: <span id="framecount">0</span></div>
+            <div>内存使用: <span id="memory">N/A</span></div>
+        </div>
+        
+        <div class="gamepad-panel">
+            <div><strong>🎮 手柄状态</strong></div>
+            <div id="gamepad-status">未连接</div>
+            <div id="gamepad-info"></div>
+            <div class="button-row">
+                <div class="btn" id="btn-0">A</div>
+                <div class="btn" id="btn-1">B</div>
+                <div class="btn" id="btn-2">X</div>
+                <div class="btn" id="btn-3">Y</div>
+            </div>
+            <div class="button-row">
+                <div class="btn" id="btn-4">LB</div>
+                <div class="btn" id="btn-5">RB</div>
+                <div class="btn" id="btn-8">Back</div>
+                <div class="btn" id="btn-9">Start</div>
+            </div>
+            <div>左摇杆: <span id="left-stick">0.00, 0.00</span></div>
+            <div>右摇杆: <span id="right-stick">0.00, 0.00</span></div>
+        </div>
+        
+        <div class="controls-panel">
+            <div><strong>⌨️ 控制说明</strong></div>
+            <div>W/A/S/D: 移动相机</div>
+            <div>鼠标: 旋转视角</div>
+            <div>手柄: 控制立方体</div>
+            <div>空格: 暂停/继续</div>
+        </div>
+        
+        <div class="optimization-panel">
+            <div><strong>⚙️ 性能优化</strong></div>
+            <button class="toggle-btn active" id="toggle-render">渲染</button>
+            <button class="toggle-btn active" id="toggle-input">输入检测</button>
+            <button class="toggle-btn active" id="toggle-physics">物理模拟</button>
+            <button class="toggle-btn active" id="toggle-shadows">阴影</button>
+            <div style="margin-top: 10px;">
+                <div>渲染质量:</div>
+                <button class="toggle-btn" onclick="setQuality('low')">低</button>
+                <button class="toggle-btn active" onclick="setQuality('medium')">中</button>
+                <button class="toggle-btn" onclick="setQuality('high')">高</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ==================== 统一游戏循环管理器 ====================
+        class UnifiedGameLoop {
+            constructor() {
+                this.isRunning = false;
+                this.animationId = null;
+                this.lastTime = 0;
+                this.deltaTime = 0;
+                this.fps = 60;
+                this.frameCount = 0;
+                
+                // 性能监控
+                this.performanceMonitor = new PerformanceMonitor();
+                
+                // 模块系统
+                this.modules = new Map();
+                this.moduleExecutionOrder = [];
+                
+                // 配置
+                this.config = {
+                    targetFPS: 60,
+                    enableVSync: true,
+                    enablePerformanceMonitoring: true,
+                    maxDeltaTime: 1000 / 30 // 防止螺旋死亡
+                };
+            }
+            
+            // 注册模块（渲染、输入、物理等）
+            registerModule(name, module, priority = 0) {
+                module.priority = priority;
+                module.enabled = true;
+                module.executionTime = 0;
+                this.modules.set(name, module);
+                
+                // 按优先级排序
+                this.moduleExecutionOrder = Array.from(this.modules.entries())
+                    .sort((a, b) => a[1].priority - b[1].priority)
+                    .map(entry => entry[0]);
+                
+                console.log(`模块注册: ${name} (优先级: ${priority})`);
+            }
+            
+            // 启用/禁用模块
+            toggleModule(name, enabled = null) {
+                const module = this.modules.get(name);
+                if (module) {
+                    module.enabled = enabled !== null ? enabled : !module.enabled;
+                    console.log(`模块 ${name}: ${module.enabled ? '启用' : '禁用'}`);
+                }
+            }
+            
+            // 主循环
+            start() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.lastTime = performance.now();
+                this.loop();
+                console.log('统一游戏循环已启动');
+            }
+            
+            stop() {
+                if (!this.isRunning) return;
+                
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                console.log('统一游戏循环已停止');
+            }
+            
+            loop() {
+                if (!this.isRunning) return;
+                
+                const currentTime = performance.now();
+                this.deltaTime = Math.min(currentTime - this.lastTime, this.config.maxDeltaTime);
+                this.lastTime = currentTime;
+                this.frameCount++;
+                
+                // 性能监控开始
+                const frameStartTime = performance.now();
+                
+                // 执行所有启用的模块
+                for (const moduleName of this.moduleExecutionOrder) {
+                    const module = this.modules.get(moduleName);
+                    if (module && module.enabled) {
+                        const moduleStartTime = performance.now();
+                        
+                        try {
+                            module.update(this.deltaTime, currentTime);
+                        } catch (error) {
+                            console.error(`模块 ${moduleName} 执行错误:`, error);
+                        }
+                        
+                        module.executionTime = performance.now() - moduleStartTime;
+                    }
+                }
+                
+                // 性能监控
+                if (this.config.enablePerformanceMonitoring) {
+                    this.performanceMonitor.update(performance.now() - frameStartTime, this.deltaTime);
+                }
+                
+                // 调度下一帧
+                this.animationId = requestAnimationFrame(() => this.loop());
+            }
+        }
+        
+        // ==================== 性能监控器 ====================
+        class PerformanceMonitor {
+            constructor() {
+                this.fps = 60;
+                this.frameTime = 16.67;
+                this.frameHistory = [];
+                this.lastUpdate = 0;
+                this.updateInterval = 500; // 500ms更新一次显示
+            }
+            
+            update(executionTime, deltaTime) {
+                this.frameHistory.push({ executionTime, deltaTime, timestamp: performance.now() });
+                
+                // 保持最近1秒的数据
+                const cutoff = performance.now() - 1000;
+                this.frameHistory = this.frameHistory.filter(frame => frame.timestamp > cutoff);
+                
+                // 更新显示
+                if (performance.now() - this.lastUpdate > this.updateInterval) {
+                    this.updateDisplay();
+                    this.lastUpdate = performance.now();
+                }
+            }
+            
+            updateDisplay() {
+                if (this.frameHistory.length === 0) return;
+                
+                const avgDelta = this.frameHistory.reduce((sum, frame) => sum + frame.deltaTime, 0) / this.frameHistory.length;
+                const avgExecution = this.frameHistory.reduce((sum, frame) => sum + frame.executionTime, 0) / this.frameHistory.length;
+                
+                this.fps = 1000 / avgDelta;
+                this.frameTime = avgDelta;
+                
+                // 更新UI
+                const fpsElement = document.getElementById('fps');
+                const fpsValue = Math.round(this.fps);
+                fpsElement.textContent = fpsValue;
+                fpsElement.className = fpsValue >= 55 ? 'status-good' : fpsValue >= 30 ? 'status-warning' : 'status-bad';
+                
+                document.getElementById('frametime').textContent = `${avgDelta.toFixed(2)}ms`;
+                document.getElementById('framecount').textContent = gameLoop.frameCount;
+                
+                // 显示各模块执行时间
+                const renderModule = gameLoop.modules.get('render');
+                const inputModule = gameLoop.modules.get('input');
+                const updateModule = gameLoop.modules.get('update');
+                
+                if (renderModule) document.getElementById('rendertime').textContent = `${renderModule.executionTime.toFixed(2)}ms`;
+                if (inputModule) document.getElementById('inputtime').textContent = `${inputModule.executionTime.toFixed(2)}ms`;
+                if (updateModule) document.getElementById('updatetime').textContent = `${updateModule.executionTime.toFixed(2)}ms`;
+                
+                // 内存使用（如果可用）
+                if (performance.memory) {
+                    const used = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
+                    document.getElementById('memory').textContent = `${used}MB`;
+                }
+            }
+        }
+        
+        // ==================== 渲染模块 ====================
+        class RenderModule {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.setupThreeJS();
+                this.setupScene();
+                this.quality = 'medium';
+            }
+            
+            setupThreeJS() {
+                // 场景设置
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // 响应式
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+            
+            setupScene() {
+                // 照明
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                this.scene.add(directionalLight);
+                
+                // 地面
+                const groundGeometry = new THREE.PlaneGeometry(20, 20);
+                const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                this.ground.rotation.x = -Math.PI / 2;
+                this.ground.receiveShadow = true;
+                this.scene.add(this.ground);
+                
+                // 可控制的立方体
+                const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+                const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+                this.controllableCube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                this.controllableCube.position.set(0, 0.5, 0);
+                this.controllableCube.castShadow = true;
+                this.scene.add(this.controllableCube);
+                
+                // 旋转的立方体们
+                this.rotatingCubes = [];
+                for (let i = 0; i < 10; i++) {
+                    const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                    const material = new THREE.MeshLambertMaterial({ 
+                        color: new THREE.Color().setHSL(i / 10, 1, 0.5) 
+                    });
+                    const cube = new THREE.Mesh(geometry, material);
+                    cube.position.set(
+                        (Math.random() - 0.5) * 10,
+                        Math.random() * 3 + 0.25,
+                        (Math.random() - 0.5) * 10
+                    );
+                    cube.castShadow = true;
+                    this.rotatingCubes.push(cube);
+                    this.scene.add(cube);
+                }
+                
+                // 相机位置
+                this.camera.position.set(5, 5, 5);
+                this.camera.lookAt(0, 0, 0);
+            }
+            
+            update(deltaTime) {
+                // 旋转立方体动画
+                this.rotatingCubes.forEach((cube, index) => {
+                    cube.rotation.x += deltaTime * 0.001 * (index + 1);
+                    cube.rotation.y += deltaTime * 0.002 * (index + 1);
+                });
+                
+                // 渲染场景
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            setQuality(quality) {
+                this.quality = quality;
+                switch(quality) {
+                    case 'low':
+                        this.renderer.setPixelRatio(0.5);
+                        this.renderer.shadowMap.enabled = false;
+                        break;
+                    case 'medium':
+                        this.renderer.setPixelRatio(1);
+                        this.renderer.shadowMap.enabled = true;
+                        break;
+                    case 'high':
+                        this.renderer.setPixelRatio(window.devicePixelRatio);
+                        this.renderer.shadowMap.enabled = true;
+                        break;
+                }
+            }
+        }
+        
+        // ==================== 输入模块 ====================
+        class InputModule {
+            constructor(renderModule) {
+                this.renderModule = renderModule;
+                this.gamepadIndex = null;
+                this.keys = {};
+                this.mouse = { x: 0, y: 0, deltaX: 0, deltaY: 0 };
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // 键盘
+                window.addEventListener('keydown', (e) => this.keys[e.code] = true);
+                window.addEventListener('keyup', (e) => this.keys[e.code] = false);
+                
+                // 鼠标
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.deltaX = e.movementX || 0;
+                    this.mouse.deltaY = e.movementY || 0;
+                });
+                
+                // 手柄事件
+                window.addEventListener('gamepadconnected', (e) => {
+                    this.gamepadIndex = e.gamepad.index;
+                    document.getElementById('gamepad-status').textContent = `已连接: ${e.gamepad.id}`;
+                    console.log('手柄已连接:', e.gamepad.id);
+                });
+                
+                window.addEventListener('gamepaddisconnected', (e) => {
+                    if (e.gamepad.index === this.gamepadIndex) {
+                        this.gamepadIndex = null;
+                        document.getElementById('gamepad-status').textContent = '未连接';
+                        console.log('手柄已断开');
+                    }
+                });
+                
+                // 暂停/继续
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        if (gameLoop.isRunning) {
+                            gameLoop.stop();
+                        } else {
+                            gameLoop.start();
+                        }
+                    }
+                });
+            }
+            
+            update(deltaTime) {
+                this.updateKeyboardInput(deltaTime);
+                this.updateMouseInput(deltaTime);
+                this.updateGamepadInput(deltaTime);
+            }
+            
+            updateKeyboardInput(deltaTime) {
+                const moveSpeed = deltaTime * 0.005;
+                const camera = this.renderModule.camera;
+                
+                if (this.keys['KeyW']) camera.position.z -= moveSpeed;
+                if (this.keys['KeyS']) camera.position.z += moveSpeed;
+                if (this.keys['KeyA']) camera.position.x -= moveSpeed;
+                if (this.keys['KeyD']) camera.position.x += moveSpeed;
+            }
+            
+            updateMouseInput(deltaTime) {
+                if (this.mouse.deltaX !== 0 || this.mouse.deltaY !== 0) {
+                    const sensitivity = 0.002;
+                    const camera = this.renderModule.camera;
+                    
+                    // 简单的鼠标视角控制
+                    camera.rotation.y -= this.mouse.deltaX * sensitivity;
+                    camera.rotation.x -= this.mouse.deltaY * sensitivity;
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    
+                    this.mouse.deltaX = 0;
+                    this.mouse.deltaY = 0;
+                }
+            }
+            
+            updateGamepadInput(deltaTime) {
+                if (this.gamepadIndex === null) return;
+                
+                const gamepads = navigator.getGamepads();
+                const gamepad = gamepads[this.gamepadIndex];
+                if (!gamepad) return;
+                
+                // 更新UI显示
+                this.updateGamepadUI(gamepad);
+                
+                // 控制立方体移动
+                const moveSpeed = deltaTime * 0.003;
+                const cube = this.renderModule.controllableCube;
+                
+                // 左摇杆控制XZ移动
+                if (gamepad.axes.length >= 2) {
+                    const leftX = gamepad.axes[0];
+                    const leftY = gamepad.axes[1];
+                    
+                    if (Math.abs(leftX) > 0.1) cube.position.x += leftX * moveSpeed;
+                    if (Math.abs(leftY) > 0.1) cube.position.z += leftY * moveSpeed;
+                }
+                
+                // 右摇杆控制Y移动和旋转
+                if (gamepad.axes.length >= 4) {
+                    const rightX = gamepad.axes[2];
+                    const rightY = gamepad.axes[3];
+                    
+                    if (Math.abs(rightY) > 0.1) cube.position.y += -rightY * moveSpeed;
+                    if (Math.abs(rightX) > 0.1) cube.rotation.y += rightX * moveSpeed;
+                }
+                
+                // 按键控制颜色
+                if (gamepad.buttons[0].pressed) { // A键
+                    cube.material.color.setHex(0xff0000);
+                } else if (gamepad.buttons[1].pressed) { // B键
+                    cube.material.color.setHex(0x0000ff);
+                } else if (gamepad.buttons[2].pressed) { // X键
+                    cube.material.color.setHex(0xffff00);
+                } else if (gamepad.buttons[3].pressed) { // Y键
+                    cube.material.color.setHex(0xff00ff);
+                } else {
+                    cube.material.color.setHex(0x00ff00);
+                }
+            }
+            
+            updateGamepadUI(gamepad) {
+                // 更新按键显示
+                gamepad.buttons.forEach((button, index) => {
+                    const btnElement = document.getElementById(`btn-${index}`);
+                    if (btnElement) {
+                        if (button.pressed) {
+                            btnElement.classList.add('pressed');
+                        } else {
+                            btnElement.classList.remove('pressed');
+                        }
+                    }
+                });
+                
+                // 更新摇杆显示
+                if (gamepad.axes.length >= 4) {
+                    document.getElementById('left-stick').textContent = 
+                        `${gamepad.axes[0].toFixed(2)}, ${gamepad.axes[1].toFixed(2)}`;
+                    document.getElementById('right-stick').textContent = 
+                        `${gamepad.axes[2].toFixed(2)}, ${gamepad.axes[3].toFixed(2)}`;
+                }
+            }
+        }
+        
+        // ==================== 更新模块 ====================
+        class UpdateModule {
+            constructor() {
+                this.time = 0;
+            }
+            
+            update(deltaTime) {
+                this.time += deltaTime;
+                // 这里可以添加游戏逻辑更新
+                // 比如物理模拟、AI、碰撞检测等
+            }
+        }
+        
+        // ==================== 初始化和启动 ====================
+        const canvas = document.getElementById('canvas');
+        const gameLoop = new UnifiedGameLoop();
+        
+        // 创建模块
+        const renderModule = new RenderModule(canvas);
+        const inputModule = new InputModule(renderModule);
+        const updateModule = new UpdateModule();
+        
+        // 注册模块（按优先级：输入 -> 更新 -> 渲染）
+        gameLoop.registerModule('input', inputModule, 1);
+        gameLoop.registerModule('update', updateModule, 2);
+        gameLoop.registerModule('render', renderModule, 3);
+        
+        // UI控制
+        document.getElementById('toggle-render').addEventListener('click', function() {
+            gameLoop.toggleModule('render');
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('toggle-input').addEventListener('click', function() {
+            gameLoop.toggleModule('input');
+            this.classList.toggle('active');
+        });
+        
+        document.getElementById('toggle-physics').addEventListener('click', function() {
+            gameLoop.toggleModule('update');
+            this.classList.toggle('active');
+        });
+        
+        window.setQuality = function(quality) {
+            renderModule.setQuality(quality);
+            // 更新按钮状态
+            document.querySelectorAll('.optimization-panel .toggle-btn').forEach(btn => {
+                if (btn.textContent === '低' || btn.textContent === '中' || btn.textContent === '高') {
+                    btn.classList.remove('active');
+                }
+            });
+            event.target.classList.add('active');
+        };
+        
+        // 启动游戏循环
+        gameLoop.start();
+        
+        console.log('统一游戏循环系统已初始化');
+        console.log('模块:', Array.from(gameLoop.modules.keys()));
+    </script>
+</body>
+</html>
